@@ -24,46 +24,45 @@ import asyncio
 import json
 import logging
 import os
-from asyncua import Client
+
 import websockets
+from asyncua import Client
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 log = logging.getLogger("hmi-bridge")
 
-import os
-
-OPCUA_URL  = os.getenv("OPCUA_URL", "opc.tcp://localhost:4840/boiler/")
-WS_HOST    = os.getenv("WS_HOST",   "0.0.0.0")
-WS_PORT    = int(os.getenv("WS_PORT", "8765"))
+OPCUA_URL = os.getenv("OPCUA_URL", "opc.tcp://localhost:4840/boiler/")
+WS_HOST = os.getenv("WS_HOST", "0.0.0.0")
+WS_PORT = int(os.getenv("WS_PORT", "8765"))
 
 # Map of friendly name → OPC UA browse path (relative to Objects/Boiler)
 NODE_MAP = {
     # Actuators
-    "InletValve":   "Actuators.InletValve",
-    "OutletValve":  "Actuators.OutletValve",
+    "InletValve": "Actuators.InletValve",
+    "OutletValve": "Actuators.OutletValve",
     "HeaterEnable": "Actuators.HeaterEnable",
     # Sensors
-    "FillLevel":    "Sensors.FillLevel",
-    "Temperature":  "Sensors.Temperature",
-    "Pressure":     "Sensors.Pressure",
-    "FlowRateIn":   "Sensors.FlowRateIn",
-    "FlowRateOut":  "Sensors.FlowRateOut",
-    "HeaterPower":  "Sensors.HeaterPower",
+    "FillLevel": "Sensors.FillLevel",
+    "Temperature": "Sensors.Temperature",
+    "Pressure": "Sensors.Pressure",
+    "FlowRateIn": "Sensors.FlowRateIn",
+    "FlowRateOut": "Sensors.FlowRateOut",
+    "HeaterPower": "Sensors.HeaterPower",
     # Alarms
     "OverTemperature": "Alarms.OverTemperature",
-    "LowLevel":        "Alarms.LowLevel",
-    "HighPressure":    "Alarms.HighPressure",
+    "LowLevel": "Alarms.LowLevel",
+    "HighPressure": "Alarms.HighPressure",
     # SimControl
     "SimIntervalS": "SimControl.SimIntervalS",
-    "SimSpeed":     "SimControl.SimSpeed",
+    "SimSpeed": "SimControl.SimSpeed",
 }
 
 
 class OpcUaBridge:
     def __init__(self):
-        self.client     = None
-        self.nodes      = {}   # name → asyncua Node object
-        self.connected  = False
+        self.client = None
+        self.nodes = {}  # name → asyncua Node object
+        self.connected = False
 
     async def connect(self):
         while True:
@@ -72,11 +71,18 @@ class OpcUaBridge:
                 await self.client.connect()
                 log.info("Connected to OPC UA server at %s", OPCUA_URL)
 
-                # Resolve all node objects once at connect time
+                # Look up the custom namespace index at runtime — it is
+                # assigned dynamically by the server and is NOT always 2.
+                nsidx = await self.client.get_namespace_index("urn:boiler:simulator")
+                log.info("Boiler namespace index: %d", nsidx)
+
+                # Resolve all node objects once at connect time.
+                # Objects node always lives in namespace 0; everything below
+                # Boiler lives in the custom namespace.
                 boiler = self.client.nodes.objects
-                boiler = await boiler.get_child(["0:Boiler"])
+                boiler = await boiler.get_child([f"{nsidx}:Boiler"])
                 for name, path in NODE_MAP.items():
-                    parts = ["0:" + p for p in path.split(".")]
+                    parts = [f"{nsidx}:{p}" for p in path.split(".")]
                     self.nodes[name] = await boiler.get_child(parts)
 
                 self.connected = True
@@ -86,6 +92,10 @@ class OpcUaBridge:
             except Exception as e:
                 log.warning("OPC UA connect failed: %s — retry in 5s", e)
                 self.connected = False
+                try:
+                    await self.client.disconnect()
+                except Exception:
+                    pass
                 await asyncio.sleep(5)
 
     async def read_all(self) -> dict:
@@ -149,10 +159,12 @@ async def ws_handler(websocket):
                 if values:
                     await websocket.send(json.dumps({"type": "data", "nodes": values}))
                 else:
-                    await websocket.send(json.dumps({"type": "error", "msg": "OPC UA not connected"}))
+                    await websocket.send(
+                        json.dumps({"type": "error", "msg": "OPC UA not connected"})
+                    )
 
             elif cmd == "write":
-                node  = msg.get("node")
+                node = msg.get("node")
                 value = msg.get("value")
                 if node and value is not None:
                     await bridge.write(node, value)
@@ -172,7 +184,7 @@ async def main():
     # Start WebSocket server
     log.info("WebSocket HMI bridge listening on ws://%s:%d", WS_HOST, WS_PORT)
     async with websockets.serve(ws_handler, WS_HOST, WS_PORT):
-        await asyncio.Future()   # run forever
+        await asyncio.Future()  # run forever
 
 
 if __name__ == "__main__":

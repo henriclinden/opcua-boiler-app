@@ -127,14 +127,30 @@ environment:
 Create a shared network so the HMI bridge can reach the simulator by container name:
 
 ```bash
+# Step 1 — create the shared network once
 docker network create boiler-net
-
-# In boiler-simulator/
-docker compose --project-name boiler-sim up -d --network boiler-net
-
-# In boiler-hmi/ — uncomment the networks block in docker-compose.yml, then:
-docker compose --project-name boiler-hmi up -d
 ```
+
+Then uncomment the `networks` block at the bottom of **both** `docker-compose.yml` files:
+
+```yaml
+networks:
+  default:
+    external: true
+    name: boiler-net
+```
+
+Then start each project normally:
+
+```bash
+# In boiler-simulator/
+docker compose up -d
+
+# In boiler-hmi/
+docker compose up -d
+```
+
+The HMI bridge will now resolve `boiler-simulator` by container name, so no IP address is needed. The default `OPCUA_URL=opc.tcp://boiler-simulator:4840/boiler/` will work as-is.
 
 ### Cross-compiling for ARM (Raspberry Pi, embedded boards)
 
