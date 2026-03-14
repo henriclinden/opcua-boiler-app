@@ -1,0 +1,1515 @@
+<!DOCTYPE html>
+<html lang="en" data-obc-theme="night">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BLR-01 — Boiler Control</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════════════════════
+   OPENBRIDGE 6.x DESIGN TOKEN SYSTEM
+   Four palettes: bright / day / dusk / night
+   Source: openbridge.no guidelines + variables.css reverse-engineered from
+   published npm package and Figma community files
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── NIGHT palette (default — lowest light, bridge at sea) ────────────── */
+[data-obc-theme="night"] {
+  --obc-theme-background-100:   #121212;
+  --obc-theme-background-200:   #1a1a1a;
+  --obc-theme-background-300:   #222222;
+  --obc-theme-container-100:    #1e1e1e;
+  --obc-theme-container-200:    #2a2a2a;
+  --obc-theme-container-300:    #333333;
+  --obc-theme-container-400:    #3d3d3d;
+  --obc-theme-border-100:       #2e2e2e;
+  --obc-theme-border-200:       #3a3a3a;
+  --obc-theme-border-300:       #484848;
+
+  /* UI text */
+  --obc-theme-text-primary:     #e0e0e0;
+  --obc-theme-text-secondary:   #9a9a9a;
+  --obc-theme-text-tertiary:    #666666;
+  --obc-theme-text-label:       #b0b0b0;
+
+  /* Instrument text — tabular numerals, slightly brighter */
+  --obc-theme-instr-primary:    #f0f0f0;
+  --obc-theme-instr-secondary:  #aaaaaa;
+  --obc-theme-instr-value:      #ffffff;
+
+  /* Accent — night uses subdued accent to preserve dark adaptation */
+  --obc-theme-accent:           #4a9eff;
+  --obc-theme-accent-dim:       #1f4a7a;
+
+  /* Status semantic colors */
+  --obc-status-ok:              #2d7a2d;
+  --obc-status-ok-text:         #5dba5d;
+  --obc-status-warning:         #c8871c;
+  --obc-status-warning-text:    #f0a830;
+  --obc-status-alarm:           #9a2020;
+  --obc-status-alarm-text:      #e84040;
+  --obc-status-alarm-hi:        #7a5500;
+  --obc-status-alarm-hi-text:   #e0a000;
+
+  /* Topbar */
+  --obc-topbar-bg:              #111111;
+  --obc-topbar-border:          #2a2a2a;
+  --obc-topbar-height:          48px;
+
+  /* Instrument fill/arc colors */
+  --obc-instr-arc-bg:           #2e2e2e;
+  --obc-instr-arc-normal:       #3a6b3a;
+  --obc-instr-arc-hi:           #7a6010;
+  --obc-instr-arc-hh:           #7a2020;
+  --obc-instr-needle:           #ffffff;
+  --obc-instr-face:             #1e1e1e;
+  --obc-instr-face-alt:         #252525;
+
+  /* Valve / automation symbol colors */
+  --obc-valve-body:             #3a3a3a;
+  --obc-valve-outline:          #888888;
+  --obc-valve-open:             #2a5a2a;
+  --obc-valve-flow:             #3a7a3a;
+
+  /* Trend */
+  --obc-trend-bg:               #161616;
+  --obc-trend-grid:             #272727;
+  --obc-trend-line-1:           #e05050;
+  --obc-trend-line-2:           #4a9eff;
+  --obc-trend-line-3:           #e0a030;
+}
+
+/* ── DUSK palette ─────────────────────────────────────────────────────── */
+[data-obc-theme="dusk"] {
+  --obc-theme-background-100:   #1c1c2e;
+  --obc-theme-background-200:   #242438;
+  --obc-theme-background-300:   #2c2c44;
+  --obc-theme-container-100:    #22223a;
+  --obc-theme-container-200:    #2e2e4a;
+  --obc-theme-container-300:    #383860;
+  --obc-theme-container-400:    #424270;
+  --obc-theme-border-100:       #333355;
+  --obc-theme-border-200:       #44446a;
+  --obc-theme-border-300:       #55558a;
+  --obc-theme-text-primary:     #dde0f0;
+  --obc-theme-text-secondary:   #9090b0;
+  --obc-theme-text-tertiary:    #606080;
+  --obc-theme-text-label:       #a8a8c8;
+  --obc-theme-instr-primary:    #eeeeff;
+  --obc-theme-instr-secondary:  #aaaacc;
+  --obc-theme-instr-value:      #ffffff;
+  --obc-theme-accent:           #7eb0ff;
+  --obc-theme-accent-dim:       #2a3a6a;
+  --obc-status-ok:              #2d6e4a;
+  --obc-status-ok-text:         #5dc888;
+  --obc-status-warning:         #b08020;
+  --obc-status-warning-text:    #f0c040;
+  --obc-status-alarm:           #8a2828;
+  --obc-status-alarm-text:      #f05050;
+  --obc-status-alarm-hi:        #6a5000;
+  --obc-status-alarm-hi-text:   #e0b020;
+  --obc-topbar-bg:              #14142a;
+  --obc-topbar-border:          #303055;
+  --obc-topbar-height:          48px;
+  --obc-instr-arc-bg:           #30304a;
+  --obc-instr-arc-normal:       #2e6e4a;
+  --obc-instr-arc-hi:           #705010;
+  --obc-instr-arc-hh:           #702020;
+  --obc-instr-needle:           #eeeeff;
+  --obc-instr-face:             #22223a;
+  --obc-instr-face-alt:         #2a2a44;
+  --obc-valve-body:             #303050;
+  --obc-valve-outline:          #8080a0;
+  --obc-valve-open:             #1a5a40;
+  --obc-valve-flow:             #2a7a60;
+  --obc-trend-bg:               #18182e;
+  --obc-trend-grid:             #282840;
+  --obc-trend-line-1:           #f06060;
+  --obc-trend-line-2:           #7eb0ff;
+  --obc-trend-line-3:           #f0c040;
+}
+
+/* ── DAY palette ──────────────────────────────────────────────────────── */
+[data-obc-theme="day"] {
+  --obc-theme-background-100:   #e8e8e8;
+  --obc-theme-background-200:   #d8d8d8;
+  --obc-theme-background-300:   #c8c8c8;
+  --obc-theme-container-100:    #f0f0f0;
+  --obc-theme-container-200:    #e4e4e4;
+  --obc-theme-container-300:    #d4d4d4;
+  --obc-theme-container-400:    #c4c4c4;
+  --obc-theme-border-100:       #b8b8b8;
+  --obc-theme-border-200:       #a8a8a8;
+  --obc-theme-border-300:       #909090;
+  --obc-theme-text-primary:     #1a1a1a;
+  --obc-theme-text-secondary:   #444444;
+  --obc-theme-text-tertiary:    #777777;
+  --obc-theme-text-label:       #333333;
+  --obc-theme-instr-primary:    #0a0a0a;
+  --obc-theme-instr-secondary:  #404040;
+  --obc-theme-instr-value:      #000000;
+  --obc-theme-accent:           #0055cc;
+  --obc-theme-accent-dim:       #c0d8f8;
+  --obc-status-ok:              #1a5a1a;
+  --obc-status-ok-text:         #1a7a1a;
+  --obc-status-warning:         #7a5000;
+  --obc-status-warning-text:    #c07000;
+  --obc-status-alarm:           #8a0000;
+  --obc-status-alarm-text:      #cc0000;
+  --obc-status-alarm-hi:        #5a4000;
+  --obc-status-alarm-hi-text:   #9a6a00;
+  --obc-topbar-bg:              #2a2a2a;
+  --obc-topbar-border:          #404040;
+  --obc-topbar-height:          48px;
+  --obc-instr-arc-bg:           #c8c8c8;
+  --obc-instr-arc-normal:       #2a6a2a;
+  --obc-instr-arc-hi:           #8a6010;
+  --obc-instr-arc-hh:           #8a2020;
+  --obc-instr-needle:           #1a1a1a;
+  --obc-instr-face:             #f0f0f0;
+  --obc-instr-face-alt:         #e4e4e4;
+  --obc-valve-body:             #d4d4d4;
+  --obc-valve-outline:          #606060;
+  --obc-valve-open:             #1a5a1a;
+  --obc-valve-flow:             #2a8a2a;
+  --obc-trend-bg:               #f8f8f8;
+  --obc-trend-grid:             #e0e0e0;
+  --obc-trend-line-1:           #cc2020;
+  --obc-trend-line-2:           #0055cc;
+  --obc-trend-line-3:           #aa6600;
+}
+
+/* ── BRIGHT palette ───────────────────────────────────────────────────── */
+[data-obc-theme="bright"] {
+  --obc-theme-background-100:   #f0f0f0;
+  --obc-theme-background-200:   #e0e0e0;
+  --obc-theme-background-300:   #d0d0d0;
+  --obc-theme-container-100:    #ffffff;
+  --obc-theme-container-200:    #f4f4f4;
+  --obc-theme-container-300:    #e8e8e8;
+  --obc-theme-container-400:    #dcdcdc;
+  --obc-theme-border-100:       #cccccc;
+  --obc-theme-border-200:       #bbbbbb;
+  --obc-theme-border-300:       #aaaaaa;
+  --obc-theme-text-primary:     #111111;
+  --obc-theme-text-secondary:   #3a3a3a;
+  --obc-theme-text-tertiary:    #6a6a6a;
+  --obc-theme-text-label:       #222222;
+  --obc-theme-instr-primary:    #000000;
+  --obc-theme-instr-secondary:  #333333;
+  --obc-theme-instr-value:      #000000;
+  --obc-theme-accent:           #0040bb;
+  --obc-theme-accent-dim:       #d0e4ff;
+  --obc-status-ok:              #0a4a0a;
+  --obc-status-ok-text:         #0a6a0a;
+  --obc-status-warning:         #6a4400;
+  --obc-status-warning-text:    #aa6a00;
+  --obc-status-alarm:           #7a0000;
+  --obc-status-alarm-text:      #bb0000;
+  --obc-status-alarm-hi:        #4a3800;
+  --obc-status-alarm-hi-text:   #8a6000;
+  --obc-topbar-bg:              #1e1e1e;
+  --obc-topbar-border:          #303030;
+  --obc-topbar-height:          48px;
+  --obc-instr-arc-bg:           #d8d8d8;
+  --obc-instr-arc-normal:       #1a5a1a;
+  --obc-instr-arc-hi:           #7a5a00;
+  --obc-instr-arc-hh:           #7a1a1a;
+  --obc-instr-needle:           #111111;
+  --obc-instr-face:             #ffffff;
+  --obc-instr-face-alt:         #f4f4f4;
+  --obc-valve-body:             #e8e8e8;
+  --obc-valve-outline:          #505050;
+  --obc-valve-open:             #0a4a0a;
+  --obc-valve-flow:             #1a7a1a;
+  --obc-trend-bg:               #ffffff;
+  --obc-trend-grid:             #eeeeee;
+  --obc-trend-line-1:           #cc0000;
+  --obc-trend-line-2:           #0040bb;
+  --obc-trend-line-3:           #996600;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   BASE LAYOUT & TYPOGRAPHY
+═══════════════════════════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  background: var(--obc-theme-background-100);
+  font-family: 'Open Sans', 'Noto Sans', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--obc-theme-text-primary);
+}
+
+/* OpenBridge typography scale */
+.obc-text-xs    { font-size: 10px; line-height: 1.4; font-weight: 400; color: var(--obc-theme-text-secondary); }
+.obc-text-sm    { font-size: 11px; line-height: 1.4; font-weight: 400; color: var(--obc-theme-text-secondary); }
+.obc-text-base  { font-size: 13px; line-height: 1.5; font-weight: 400; color: var(--obc-theme-text-primary); }
+.obc-text-label { font-size: 11px; line-height: 1.3; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--obc-theme-text-label); }
+.obc-text-tag   { font-size: 10px; font-weight: 700; letter-spacing: 0.10em; text-transform: uppercase; color: var(--obc-theme-text-tertiary); }
+
+/* Instrument text — tabular numerals */
+.obc-instr-xl   { font-size: 32px; font-weight: 300; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; color: var(--obc-theme-instr-value); line-height: 1; }
+.obc-instr-lg   { font-size: 24px; font-weight: 300; font-variant-numeric: tabular-nums; color: var(--obc-theme-instr-value); line-height: 1; }
+.obc-instr-md   { font-size: 18px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--obc-theme-instr-primary); line-height: 1; }
+.obc-instr-sm   { font-size: 14px; font-weight: 400; font-variant-numeric: tabular-nums; color: var(--obc-theme-instr-secondary); line-height: 1; }
+.obc-instr-unit { font-size: 11px; font-weight: 400; color: var(--obc-theme-text-tertiary); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOP BAR  — OpenBridge mandatory fixed application bar
+═══════════════════════════════════════════════════════════════════════════ */
+#obc-topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: var(--obc-topbar-height);
+  background: var(--obc-topbar-bg);
+  border-bottom: 1px solid var(--obc-topbar-border);
+  display: flex;
+  align-items: center;
+  gap: 0;
+  z-index: 100;
+  user-select: none;
+}
+
+.topbar-app-btn {
+  width: var(--obc-topbar-height);
+  height: var(--obc-topbar-height);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  border-right: 1px solid var(--obc-topbar-border);
+}
+.topbar-app-btn svg { width: 22px; height: 22px; }
+
+.topbar-title {
+  padding: 0 16px;
+  border-right: 1px solid var(--obc-topbar-border);
+  height: 100%;
+  display: flex; flex-direction: column; justify-content: center;
+}
+.topbar-title .app-name    { font-size: 13px; font-weight: 600; color: #e0e0e0; letter-spacing: 0.04em; }
+.topbar-title .app-context { font-size: 10px; color: #666; letter-spacing: 0.06em; text-transform: uppercase; }
+
+.topbar-spacer { flex: 1; }
+
+/* Alarm indicator in topbar */
+.topbar-alarm-zone {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0 16px;
+  height: 100%;
+  border-left: 1px solid var(--obc-topbar-border);
+}
+.topbar-alarm-badge {
+  display: flex; align-items: center; gap: 5px;
+  padding: 3px 10px;
+  background: var(--obc-status-alarm);
+  color: var(--obc-status-alarm-text);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: obc-alarm-pulse 1s step-end infinite;
+  display: none;
+}
+.topbar-alarm-badge.active { display: flex; }
+@keyframes obc-alarm-pulse { 50% { opacity: 0.3; } }
+
+/* Connection dot */
+.topbar-conn {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 16px;
+  height: 100%;
+  border-left: 1px solid var(--obc-topbar-border);
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--obc-theme-text-tertiary);
+}
+.conn-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--obc-status-alarm-text);
+  transition: background 0.5s;
+}
+.conn-dot.live { background: var(--obc-status-ok-text); }
+
+/* Clock */
+.topbar-clock {
+  padding: 0 16px;
+  height: 100%;
+  display: flex; flex-direction: column; justify-content: center; align-items: flex-end;
+  border-left: 1px solid var(--obc-topbar-border);
+  min-width: 110px;
+}
+.topbar-clock .time { font-size: 15px; font-variant-numeric: tabular-nums; font-weight: 300; color: var(--obc-theme-text-primary); }
+.topbar-clock .date { font-size: 10px; color: var(--obc-theme-text-tertiary); letter-spacing: 0.04em; }
+
+/* Theme switcher */
+.topbar-theme-btn {
+  padding: 0 12px;
+  height: 100%;
+  display: flex; align-items: center;
+  border-left: 1px solid var(--obc-topbar-border);
+  cursor: pointer;
+  gap: 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--obc-theme-text-tertiary);
+  background: none; border-top: none; border-bottom: none; border-right: none;
+  outline: none;
+}
+.topbar-theme-btn:hover { color: var(--obc-theme-text-primary); background: var(--obc-theme-container-100); }
+.topbar-theme-btn svg { width: 16px; height: 16px; }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAIN CONTENT AREA
+═══════════════════════════════════════════════════════════════════════════ */
+#obc-main {
+  margin-top: var(--obc-topbar-height);
+  height: calc(100vh - var(--obc-topbar-height));
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  grid-template-rows: 1fr 180px;
+  gap: 1px;
+  background: var(--obc-theme-border-100);
+  overflow: hidden;
+}
+
+/* ── Panel base ─────────────────────────────────────────────────────────── */
+.obc-panel {
+  background: var(--obc-theme-background-200);
+  overflow: hidden;
+  position: relative;
+}
+.obc-panel-header {
+  padding: 8px 14px 6px;
+  border-bottom: 1px solid var(--obc-theme-border-100);
+  display: flex; align-items: center; gap: 8px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   P&ID PANEL
+═══════════════════════════════════════════════════════════════════════════ */
+#pid-panel {
+  grid-column: 1; grid-row: 1;
+  background: var(--obc-theme-background-100);
+}
+#pid-svg {
+  width: 100%; height: 100%;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   INSTRUMENTS PANEL  (right column, top)
+═══════════════════════════════════════════════════════════════════════════ */
+#inst-panel {
+  grid-column: 2; grid-row: 1;
+  display: flex; flex-direction: column;
+  overflow-y: auto;
+  gap: 1px;
+  background: var(--obc-theme-border-100);
+}
+
+/* ── Instrument card ──────────────────────────────────────────────────── */
+.obc-instrument {
+  background: var(--obc-theme-container-100);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+.obc-instrument-info {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.obc-instrument-reading {
+  display: flex; align-items: baseline; gap: 5px;
+}
+
+/* ── Actuator faceplate ───────────────────────────────────────────────── */
+.obc-faceplate {
+  background: var(--obc-theme-container-100);
+  border-bottom: 1px solid var(--obc-theme-border-100);
+  padding: 10px 14px;
+  flex-shrink: 0;
+}
+.obc-faceplate-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 8px;
+}
+.obc-faceplate-row {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 4px;
+}
+
+/* OpenBridge slider */
+.obc-slider-wrap {
+  flex: 1;
+  display: flex; flex-direction: column; gap: 3px;
+}
+.obc-slider-track {
+  position: relative; height: 24px; display: flex; align-items: center;
+}
+input[type="range"].obc-slider {
+  -webkit-appearance: none;
+  width: 100%; height: 4px;
+  background: var(--obc-theme-container-300);
+  outline: none;
+  border-radius: 2px;
+  cursor: pointer;
+}
+input[type="range"].obc-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--obc-theme-accent);
+  border: 2px solid var(--obc-theme-background-100);
+  cursor: pointer;
+  box-shadow: 0 0 0 1px var(--obc-theme-accent);
+}
+input[type="range"].obc-slider::-moz-range-thumb {
+  width: 16px; height: 16px;
+  border-radius: 50%;
+  background: var(--obc-theme-accent);
+  border: 2px solid var(--obc-theme-background-100);
+  cursor: pointer;
+}
+.obc-slider-labels {
+  display: flex; justify-content: space-between;
+}
+
+/* OpenBridge toggle button */
+.obc-toggle {
+  padding: 5px 14px;
+  font-family: inherit; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  border: 1px solid var(--obc-theme-border-200);
+  background: var(--obc-theme-container-200);
+  color: var(--obc-theme-text-secondary);
+  cursor: pointer; outline: none;
+  transition: background 0.15s, color 0.15s;
+  min-width: 54px; text-align: center;
+}
+.obc-toggle.on {
+  background: var(--obc-status-ok);
+  border-color: var(--obc-status-ok-text);
+  color: var(--obc-status-ok-text);
+}
+
+/* ── Alarm list ───────────────────────────────────────────────────────── */
+#alarm-panel {
+  background: var(--obc-theme-container-100);
+  border-bottom: 1px solid var(--obc-theme-border-100);
+  padding: 8px 14px;
+  flex-shrink: 0;
+}
+.alarm-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--obc-theme-border-100);
+  font-size: 11px;
+}
+.alarm-row:last-child { border-bottom: none; }
+.alarm-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--obc-theme-container-300);
+  flex-shrink: 0;
+  transition: background 0.3s;
+}
+.alarm-dot.alarm  { background: var(--obc-status-alarm-text); animation: obc-alarm-pulse 1s step-end infinite; }
+.alarm-dot.warn   { background: var(--obc-status-warning-text); }
+.alarm-dot.ok     { background: var(--obc-status-ok-text); }
+.alarm-tag-label  { flex: 1; font-weight: 600; color: var(--obc-theme-text-secondary); }
+.alarm-tag-label.alarm { color: var(--obc-status-alarm-text); }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TREND PANEL  (bottom full width)
+═══════════════════════════════════════════════════════════════════════════ */
+#trend-panel {
+  grid-column: 1 / -1; grid-row: 2;
+  display: flex; flex-direction: column;
+  background: var(--obc-theme-background-200);
+}
+#trend-panel .obc-panel-header { flex-shrink: 0; }
+#trend-canvas-wrap {
+  flex: 1; display: flex; gap: 1px; background: var(--obc-theme-border-100);
+  overflow: hidden;
+}
+.trend-channel {
+  flex: 1;
+  background: var(--obc-trend-bg);
+  position: relative;
+  overflow: hidden;
+}
+.trend-channel canvas {
+  position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+}
+.trend-channel-label {
+  position: absolute; top: 4px; left: 8px;
+  font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--obc-theme-text-tertiary);
+  pointer-events: none;
+}
+.trend-channel-value {
+  position: absolute; bottom: 4px; right: 8px;
+  font-size: 18px; font-variant-numeric: tabular-nums; font-weight: 300;
+  pointer-events: none;
+}
+
+/* ── Sim control strip ───────────────────────────────────────────────── */
+#sim-strip {
+  grid-column: 2; grid-row: 2;
+  background: var(--obc-theme-container-100);
+  display: flex; flex-direction: column;
+  justify-content: center;
+  padding: 10px 14px;
+  gap: 6px;
+  border-left: 1px solid var(--obc-theme-border-100);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ARC GAUGE (SVG-based, rendered in JS)
+═══════════════════════════════════════════════════════════════════════════ */
+.obc-gauge-svg {
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ALARM BANNER — BAM (Basic Alarm Management)
+═══════════════════════════════════════════════════════════════════════════ */
+#obc-bam {
+  position: fixed;
+  top: var(--obc-topbar-height);
+  left: 0; right: 0;
+  background: var(--obc-status-alarm);
+  border-bottom: 2px solid var(--obc-status-alarm-text);
+  display: none;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  height: 32px;
+  z-index: 90;
+}
+#obc-bam.has-alarm { display: flex; }
+.bam-item {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--obc-status-alarm-text);
+  animation: obc-alarm-pulse 0.8s step-end infinite;
+}
+.bam-separator { width: 1px; height: 16px; background: rgba(255,255,255,0.15); }
+#bam-ack-btn {
+  margin-left: auto;
+  padding: 2px 12px;
+  font-family: inherit; font-size: 10px; font-weight: 700;
+  letter-spacing: 0.08em; text-transform: uppercase;
+  background: transparent; border: 1px solid var(--obc-status-alarm-text);
+  color: var(--obc-status-alarm-text); cursor: pointer;
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════
+     TOP BAR
+════════════════════════════════════════════ -->
+<div id="obc-topbar">
+  <!-- App icon / hamburger -->
+  <div class="topbar-app-btn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" color="#888">
+      <line x1="3" y1="7" x2="21" y2="7"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="17" x2="21" y2="17"/>
+    </svg>
+  </div>
+
+  <div class="topbar-title">
+    <span class="app-name">BLR-01 &nbsp;·&nbsp; Boiler Control</span>
+    <span class="app-context">Process Automation &nbsp;/&nbsp; Plant-01</span>
+  </div>
+
+  <div class="topbar-spacer"></div>
+
+  <!-- Alarm badge -->
+  <div class="topbar-alarm-zone">
+    <span class="topbar-alarm-badge" id="bam-topbar-badge">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 14h14L8 1zm0 2.6L13.1 13H2.9L8 3.6zM7 7h2v3H7zm0 4h2v2H7z"/></svg>
+      ALARM ACTIVE
+    </span>
+  </div>
+
+  <!-- Connection -->
+  <div class="topbar-conn">
+    <div class="conn-dot" id="conn-dot"></div>
+    <span id="conn-label">OPC UA</span>
+  </div>
+
+  <!-- Theme picker -->
+  <button class="topbar-theme-btn" onclick="cycleTheme()" title="Switch palette">
+    <svg viewBox="0 0 16 16" fill="currentColor" color="#888">
+      <circle cx="8" cy="8" r="3"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3.1 3.1l1.4 1.4M11.5 11.5l1.4 1.4M3.1 12.9l1.4-1.4M11.5 4.5l1.4-1.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>
+    <span id="theme-label">NIGHT</span>
+  </button>
+
+  <!-- Clock -->
+  <div class="topbar-clock">
+    <span class="time" id="clock-time">--:--:--</span>
+    <span class="date" id="clock-date">----</span>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     ALARM BANNER (BAM)
+════════════════════════════════════════════ -->
+<div id="obc-bam">
+  <span class="bam-item" id="bam-ot" style="display:none">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 14h14L8 1zm0 2.6L13.1 13H2.9L8 3.6zM7 7h2v3H7zm0 4h2v2H7z"/></svg>
+    TI-01 OVER TEMP
+  </span>
+  <span class="bam-separator" id="bam-sep1" style="display:none"></span>
+  <span class="bam-item" id="bam-ll" style="display:none">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 14h14L8 1zm0 2.6L13.1 13H2.9L8 3.6zM7 7h2v3H7zm0 4h2v2H7z"/></svg>
+    LI-01 LOW LEVEL
+  </span>
+  <span class="bam-separator" id="bam-sep2" style="display:none"></span>
+  <span class="bam-item" id="bam-hp" style="display:none">
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1L1 14h14L8 1zm0 2.6L13.1 13H2.9L8 3.6zM7 7h2v3H7zm0 4h2v2H7z"/></svg>
+    PI-01 HIGH PRESSURE
+  </span>
+  <button id="bam-ack-btn" onclick="ackAlarms()">ACK</button>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     MAIN GRID
+════════════════════════════════════════════ -->
+<div id="obc-main">
+
+  <!-- P&ID SVG panel -->
+  <div class="obc-panel" id="pid-panel">
+    <svg id="pid-svg" viewBox="0 0 700 420" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+
+      <!-- Background grid (subtle) -->
+      <defs>
+        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+          <path d="M 40 0 L 0 0 0 40" fill="none" stroke-width="0.3" id="grid-path"/>
+        </pattern>
+        <clipPath id="vessel-clip">
+          <rect id="vessel-clip-rect" x="281" y="81" width="138" height="218"/>
+        </clipPath>
+      </defs>
+      <rect width="700" height="420" fill="url(#grid)" id="pid-bg"/>
+
+      <!-- ── PROCESS LINES (main=3px, secondary=1px) ── -->
+      <!-- Cold water supply feed — enters from left, main line -->
+      <line x1="10"  y1="130" x2="120" y2="130" stroke-width="3" class="pid-main-line"/>
+      <!-- Feed into inlet valve -->
+      <line x1="160" y1="130" x2="280" y2="130" stroke-width="3" class="pid-main-line"/>
+      <!-- Feed dip tube down into vessel -->
+      <line x1="310" y1="130" x2="310" y2="300" stroke-width="1.5" stroke-dasharray="5 3" class="pid-sec-line" opacity="0.5"/>
+      <!-- Hot water outlet — exits vessel top-right -->
+      <line x1="390" y1="130" x2="500" y2="130" stroke-width="3" class="pid-main-line"/>
+      <!-- Outlet to consumer — right edge -->
+      <line x1="540" y1="130" x2="690" y2="130" stroke-width="3" class="pid-main-line"/>
+      <!-- Flow direction arrows -->
+      <polygon points="110,125 122,130 110,135" class="pid-arrow"/>
+      <polygon points="490,125 502,130 490,135" class="pid-arrow"/>
+      <polygon points="680,125 692,130 680,135" class="pid-arrow"/>
+      <!-- Heater fuel supply, secondary, dashed -->
+      <line x1="340" y1="420" x2="340" y2="325" stroke-width="1" stroke-dasharray="4 3" class="pid-sec-line"/>
+      <!-- Instrument signal lines (dashed, thin) -->
+      <!-- LT to LIC (left side of vessel) -->
+      <line x1="280" y1="230" x2="200" y2="230" stroke-width="0.8" stroke-dasharray="3 3" class="pid-signal-line"/>
+      <!-- TT (right side) -->
+      <line x1="420" y1="200" x2="510" y2="200" stroke-width="0.8" stroke-dasharray="3 3" class="pid-signal-line"/>
+      <!-- PT (right side) -->
+      <line x1="420" y1="260" x2="510" y2="260" stroke-width="0.8" stroke-dasharray="3 3" class="pid-signal-line"/>
+      <!-- FI-101 tap from inlet line -->
+      <line x1="220" y1="130" x2="220" y2="165" stroke-width="0.8" stroke-dasharray="3 3" class="pid-signal-line"/>
+      <!-- FI-201 tap from outlet line -->
+      <line x1="460" y1="130" x2="460" y2="165" stroke-width="0.8" stroke-dasharray="3 3" class="pid-signal-line"/>
+
+      <!-- ══ VESSEL ══ -->
+      <!-- Water fill (clipped, JS-controlled) -->
+      <rect id="vessel-water" x="282" y="82" width="136" height="217"
+            clip-path="url(#vessel-clip)" rx="4"
+            fill="none" opacity="0.35"/>
+      <!-- Vessel shell -->
+      <rect x="280" y="80" width="140" height="220" rx="10"
+            fill="none" stroke-width="2" class="pid-vessel-outline" id="vessel-rect"/>
+      <!-- Vessel top dome -->
+      <ellipse cx="350" cy="80" rx="70" ry="10" fill="none" stroke-width="1.5" class="pid-vessel-outline"/>
+      <!-- Vessel bottom dome -->
+      <ellipse cx="350" cy="300" rx="70" ry="12" fill="none" stroke-width="1.5" class="pid-vessel-outline"/>
+      <!-- Level scale ticks -->
+      <line x1="280" y1="108" x2="290" y2="108" stroke-width="1" class="pid-sec-line"/>
+      <line x1="280" y1="190" x2="290" y2="190" stroke-width="1" class="pid-sec-line"/>
+      <line x1="280" y1="272" x2="290" y2="272" stroke-width="1" class="pid-sec-line"/>
+      <text x="275" y="111" text-anchor="end" class="pid-scale-txt">100</text>
+      <text x="275" y="193" text-anchor="end" class="pid-scale-txt">50</text>
+      <text x="275" y="275" text-anchor="end" class="pid-scale-txt">0</text>
+      <!-- Heater element symbol (coil) -->
+      <polyline class="pid-heater" id="pid-heater-coil"
+        points="294,318 302,310 310,318 318,310 326,318 334,310 342,318 350,310 358,318 366,310 374,318 382,310 390,318 398,310 406,318"/>
+      <!-- Vessel tag -->
+      <text x="350" y="205" text-anchor="middle" class="pid-vessel-tag">BLR-01</text>
+      <text x="350" y="218" text-anchor="middle" class="pid-vessel-subtag">V = 200 L</text>
+      <!-- Live level value on vessel -->
+      <text id="pid-level-val" x="350" y="250" text-anchor="middle" class="pid-live-big">--.-</text>
+      <text x="350" y="263" text-anchor="middle" class="pid-live-unit">% LEVEL</text>
+
+      <!-- ══ VALVES  (ISA butterfly: two triangles tip-to-tip) ══ -->
+      <!-- FV-101 inlet valve -->
+      <g id="fv101" transform="translate(140,130)">
+        <polygon id="fv101-l" points="-20,0 0,-14 0,14" stroke-width="1.5"/>
+        <polygon id="fv101-r" points=" 20,0 0,-14 0,14" stroke-width="1.5"/>
+        <line x1="-20" y1="0" x2="20" y2="0" stroke-width="1.5" class="pid-valve-stem"/>
+        <!-- Actuator box (automated) -->
+        <rect x="-9" y="-30" width="18" height="15" stroke-width="1" class="pid-actuator-box"/>
+        <line x1="0" y1="-14" x2="0" y2="-15" stroke-width="1" class="pid-valve-stem"/>
+        <!-- Valve tag -->
+        <text x="0" y="26" text-anchor="middle" class="pid-tag">FV-101</text>
+      </g>
+
+      <!-- FV-201 outlet valve -->
+      <g id="fv201" transform="translate(520,130)">
+        <polygon id="fv201-l" points="-20,0 0,-14 0,14" stroke-width="1.5"/>
+        <polygon id="fv201-r" points=" 20,0 0,-14 0,14" stroke-width="1.5"/>
+        <line x1="-20" y1="0" x2="20" y2="0" stroke-width="1.5" class="pid-valve-stem"/>
+        <rect x="-9" y="-30" width="18" height="15" stroke-width="1" class="pid-actuator-box"/>
+        <text x="0" y="26" text-anchor="middle" class="pid-tag">FV-201</text>
+      </g>
+
+      <!-- HE-101 Heater switch (manual) -->
+      <g transform="translate(340,355)">
+        <circle id="he101-body" cx="0" cy="0" r="12" stroke-width="1.5"/>
+        <line id="he101-contact" x1="-7" y1="5" x2="7" y2="-5" stroke-width="2" stroke-linecap="round" class="pid-valve-stem"/>
+        <text x="0" y="24" text-anchor="middle" class="pid-tag">HE-101</text>
+      </g>
+
+      <!-- ══ INSTRUMENT CIRCLES (ISA standard) ══ -->
+      <!-- LT-01 Level Transmitter -->
+      <g transform="translate(178,230)">
+        <circle r="16" stroke-width="1.5" class="pid-inst-circle"/>
+        <text y="-4" text-anchor="middle" class="pid-inst-func">LT</text>
+        <text y="8"  text-anchor="middle" class="pid-inst-num">01</text>
+        <line x1="16" y1="0" x2="30" y2="0" stroke-width="1" class="pid-main-line"/>
+        <text x="0" y="26" text-anchor="middle" class="pid-tag">LT-01</text>
+      </g>
+
+      <!-- TT-01 Temperature Transmitter -->
+      <g transform="translate(530,200)">
+        <circle r="16" stroke-width="1.5" class="pid-inst-circle"/>
+        <text y="-4" text-anchor="middle" class="pid-inst-func">TT</text>
+        <text y="8"  text-anchor="middle" class="pid-inst-num">01</text>
+        <line x1="-16" y1="0" x2="-30" y2="0" stroke-width="1" class="pid-main-line"/>
+        <text x="0" y="26" text-anchor="middle" class="pid-tag">TT-01</text>
+      </g>
+
+      <!-- PT-01 Pressure Transmitter -->
+      <g transform="translate(530,260)">
+        <circle r="16" stroke-width="1.5" class="pid-inst-circle"/>
+        <text y="-4" text-anchor="middle" class="pid-inst-func">PT</text>
+        <text y="8"  text-anchor="middle" class="pid-inst-num">01</text>
+        <line x1="-16" y1="0" x2="-30" y2="0" stroke-width="1" class="pid-main-line"/>
+        <text x="0" y="26" text-anchor="middle" class="pid-tag">PT-01</text>
+      </g>
+
+      <!-- FI-101 Flow Indicator (inline, inlet) -->
+      <g transform="translate(220,183)">
+        <circle r="12" stroke-width="1.2" class="pid-inst-circle"/>
+        <text y="-3" text-anchor="middle" class="pid-inst-func" style="font-size:8px">FI</text>
+        <text y="7"  text-anchor="middle" class="pid-inst-num" style="font-size:7px">101</text>
+        <text x="0" y="20" text-anchor="middle" class="pid-tag">FI-101</text>
+        <!-- Live flow value -->
+        <text id="pid-flowin" x="0" y="34" text-anchor="middle" class="pid-live-sm">-.--</text>
+      </g>
+
+      <!-- FI-201 Flow Indicator (outlet) -->
+      <g transform="translate(460,183)">
+        <circle r="12" stroke-width="1.2" class="pid-inst-circle"/>
+        <text y="-3" text-anchor="middle" class="pid-inst-func" style="font-size:8px">FI</text>
+        <text y="7"  text-anchor="middle" class="pid-inst-num" style="font-size:7px">201</text>
+        <text x="0" y="20" text-anchor="middle" class="pid-tag">FI-201</text>
+        <text id="pid-flowout" x="0" y="34" text-anchor="middle" class="pid-live-sm">-.--</text>
+      </g>
+
+      <!-- Stream labels -->
+      <text x="12" y="122" class="pid-stream-label">CWS</text>
+      <text x="648" y="122" class="pid-stream-label">HWS</text>
+      <text x="330" y="415" class="pid-stream-label">FUEL</text>
+
+      <!-- Alarm indicators (hidden by default) -->
+      <g id="pid-alm-ot" style="display:none">
+        <rect x="424" y="75" width="90" height="16" rx="2" fill="none" class="pid-alm-rect-alarm"/>
+        <text x="469" y="87" text-anchor="middle" class="pid-alm-txt-alarm">OVER TEMP</text>
+      </g>
+      <g id="pid-alm-ll" style="display:none">
+        <rect x="424" y="95" width="90" height="16" rx="2" fill="none" class="pid-alm-rect-alarm"/>
+        <text x="469" y="107" text-anchor="middle" class="pid-alm-txt-alarm">LOW LEVEL</text>
+      </g>
+      <g id="pid-alm-hp" style="display:none">
+        <rect x="424" y="115" width="90" height="16" rx="2" fill="none" class="pid-alm-rect-warn"/>
+        <text x="469" y="127" text-anchor="middle" class="pid-alm-txt-warn">HI PRESS</text>
+      </g>
+
+      <!-- Heater ON/OFF label -->
+      <text id="pid-heater-label" x="340" y="388" text-anchor="middle" class="pid-heater-state">HEATER OFF</text>
+    </svg>
+  </div>
+
+  <!-- ══ INSTRUMENTS PANEL ══ -->
+  <div class="obc-panel" id="inst-panel">
+
+    <!-- Alarm list -->
+    <div id="alarm-panel">
+      <div class="obc-panel-header" style="padding:6px 14px 5px; border:none; margin-bottom:0">
+        <span class="obc-text-label">Alarms</span>
+      </div>
+      <div class="alarm-row">
+        <div class="alarm-dot" id="alm-dot-ot"></div>
+        <span class="alarm-tag-label obc-text-sm" id="alm-lbl-ot">TI-01 &nbsp; Over Temperature</span>
+      </div>
+      <div class="alarm-row">
+        <div class="alarm-dot" id="alm-dot-ll"></div>
+        <span class="alarm-tag-label obc-text-sm" id="alm-lbl-ll">LI-01 &nbsp; Low Level</span>
+      </div>
+      <div class="alarm-row">
+        <div class="alarm-dot" id="alm-dot-hp"></div>
+        <span class="alarm-tag-label obc-text-sm" id="alm-lbl-hp">PI-01 &nbsp; High Pressure</span>
+      </div>
+    </div>
+
+    <!-- TI-01 Temperature -->
+    <div class="obc-instrument">
+      <svg class="obc-gauge-svg" id="gauge-temp" width="72" height="72" viewBox="0 0 72 72"></svg>
+      <div class="obc-instrument-info">
+        <span class="obc-text-tag">TI-01</span>
+        <span class="obc-text-label" style="font-size:10px;margin-bottom:2px">Temperature</span>
+        <div class="obc-instrument-reading">
+          <span class="obc-instr-lg" id="val-temp">--.-</span>
+          <span class="obc-instr-unit">°C</span>
+        </div>
+        <span class="obc-text-xs">Range 0 – 100 °C</span>
+      </div>
+    </div>
+
+    <!-- PI-01 Pressure -->
+    <div class="obc-instrument">
+      <svg class="obc-gauge-svg" id="gauge-press" width="72" height="72" viewBox="0 0 72 72"></svg>
+      <div class="obc-instrument-info">
+        <span class="obc-text-tag">PI-01</span>
+        <span class="obc-text-label" style="font-size:10px;margin-bottom:2px">Pressure</span>
+        <div class="obc-instrument-reading">
+          <span class="obc-instr-lg" id="val-press">-.---</span>
+          <span class="obc-instr-unit">bar</span>
+        </div>
+        <span class="obc-text-xs">Range 1.0 – 4.0 bar</span>
+      </div>
+    </div>
+
+    <!-- LI-01 Level (vertical bargraph) -->
+    <div class="obc-instrument">
+      <svg class="obc-gauge-svg" id="gauge-level" width="28" height="72" viewBox="0 0 28 72"></svg>
+      <div class="obc-instrument-info">
+        <span class="obc-text-tag">LI-01</span>
+        <span class="obc-text-label" style="font-size:10px;margin-bottom:2px">Fill Level</span>
+        <div class="obc-instrument-reading">
+          <span class="obc-instr-lg" id="val-level">--.-</span>
+          <span class="obc-instr-unit">%</span>
+        </div>
+        <span class="obc-text-xs">Range 0 – 100 %</span>
+      </div>
+    </div>
+
+    <!-- FV-101 Inlet Valve -->
+    <div class="obc-faceplate">
+      <div class="obc-faceplate-header">
+        <span class="obc-text-tag">FV-101</span>
+        <span class="obc-text-label" style="font-size:10px">Inlet Valve</span>
+        <span class="obc-instr-sm" id="fp-inlet-val">0.0 %</span>
+      </div>
+      <div class="obc-faceplate-row">
+        <span class="obc-text-xs" style="min-width:50px">Setpoint</span>
+        <div class="obc-slider-wrap">
+          <div class="obc-slider-track">
+            <input type="range" class="obc-slider" id="ctrl-inlet" min="0" max="100" value="0"
+                   oninput="writeNode('InletValve', parseFloat(this.value))"/>
+          </div>
+          <div class="obc-slider-labels">
+            <span class="obc-text-xs">0</span>
+            <span class="obc-text-xs">100 %</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FV-201 Outlet Valve -->
+    <div class="obc-faceplate">
+      <div class="obc-faceplate-header">
+        <span class="obc-text-tag">FV-201</span>
+        <span class="obc-text-label" style="font-size:10px">Outlet Valve</span>
+        <span class="obc-instr-sm" id="fp-outlet-val">0.0 %</span>
+      </div>
+      <div class="obc-faceplate-row">
+        <span class="obc-text-xs" style="min-width:50px">Setpoint</span>
+        <div class="obc-slider-wrap">
+          <div class="obc-slider-track">
+            <input type="range" class="obc-slider" id="ctrl-outlet" min="0" max="100" value="0"
+                   oninput="writeNode('OutletValve', parseFloat(this.value))"/>
+          </div>
+          <div class="obc-slider-labels">
+            <span class="obc-text-xs">0</span>
+            <span class="obc-text-xs">100 %</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HE-101 Heater -->
+    <div class="obc-faceplate">
+      <div class="obc-faceplate-header">
+        <span class="obc-text-tag">HE-101</span>
+        <span class="obc-text-label" style="font-size:10px">Heater Element</span>
+      </div>
+      <div class="obc-faceplate-row">
+        <button class="obc-toggle" id="btn-heater" onclick="toggleHeater()">OFF</button>
+        <div style="flex:1; display:flex; align-items:baseline; gap:4px; padding-left:10px">
+          <span class="obc-instr-md" id="fp-hpow">0.00</span>
+          <span class="obc-instr-unit">kW</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /inst-panel -->
+
+  <!-- ══ TREND PANEL ══ -->
+  <div class="obc-panel" id="trend-panel">
+    <div class="obc-panel-header">
+      <span class="obc-text-label">Process Trend</span>
+      <span class="obc-text-xs" style="margin-left:8px">Last 120 s · 1 Hz</span>
+    </div>
+    <div id="trend-canvas-wrap">
+      <div class="trend-channel">
+        <canvas id="trend-temp"></canvas>
+        <span class="trend-channel-label" style="color:var(--obc-trend-line-1)">TI-01 TEMP</span>
+        <span class="trend-channel-value" id="tv-temp" style="color:var(--obc-trend-line-1)">--.-&thinsp;<span style="font-size:11px;opacity:0.6">°C</span></span>
+      </div>
+      <div class="trend-channel">
+        <canvas id="trend-level"></canvas>
+        <span class="trend-channel-label" style="color:var(--obc-trend-line-2)">LI-01 LEVEL</span>
+        <span class="trend-channel-value" id="tv-level" style="color:var(--obc-trend-line-2)">--.-&thinsp;<span style="font-size:11px;opacity:0.6">%</span></span>
+      </div>
+      <div class="trend-channel">
+        <canvas id="trend-press"></canvas>
+        <span class="trend-channel-label" style="color:var(--obc-trend-line-3)">PI-01 PRESS</span>
+        <span class="trend-channel-value" id="tv-press" style="color:var(--obc-trend-line-3)">-.---&thinsp;<span style="font-size:11px;opacity:0.6">bar</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ SIM CONTROL ══ -->
+  <div id="sim-strip">
+    <div style="border-bottom:1px solid var(--obc-theme-border-100); padding-bottom:6px; margin-bottom:4px">
+      <span class="obc-text-label">Simulation Control</span>
+    </div>
+    <div class="obc-faceplate-row" style="margin-bottom:2px">
+      <span class="obc-text-xs" style="min-width:72px">Interval</span>
+      <div class="obc-slider-wrap">
+        <input type="range" class="obc-slider" id="ctrl-interval" min="1" max="20" step="1" value="10"
+               oninput="onSimInterval(this.value)"/>
+      </div>
+      <span class="obc-instr-sm" id="fp-interval" style="min-width:32px; text-align:right">1.0 s</span>
+    </div>
+    <div class="obc-faceplate-row">
+      <span class="obc-text-xs" style="min-width:72px">Speed</span>
+      <div class="obc-slider-wrap">
+        <input type="range" class="obc-slider" id="ctrl-speed" min="1" max="200" step="1" value="10"
+               oninput="onSimSpeed(this.value)"/>
+      </div>
+      <span class="obc-instr-sm" id="fp-speed" style="min-width:32px; text-align:right">1.0×</span>
+    </div>
+  </div>
+
+</div><!-- /obc-main -->
+
+<style>
+/* ── Dynamic SVG colors (set via JS CSS variables on root) ──────────────── */
+.pid-bg-fill { fill: var(--obc-theme-background-100); }
+
+/* Applied to SVG elements via class — theme-responsive */
+[data-obc-theme] #pid-bg       { stroke: var(--obc-theme-border-100); }
+[data-obc-theme] .pid-main-line{ stroke: var(--obc-theme-text-primary); fill: none; }
+[data-obc-theme] .pid-sec-line { stroke: var(--obc-theme-text-tertiary); fill: none; }
+[data-obc-theme] .pid-signal-line { stroke: var(--obc-theme-border-300); fill: none; }
+[data-obc-theme] .pid-arrow    { fill: var(--obc-theme-text-primary); }
+[data-obc-theme] .pid-vessel-outline { stroke: var(--obc-theme-text-primary); fill: none; }
+[data-obc-theme] .pid-scale-txt { font-family: 'Open Sans', sans-serif; font-size: 9px; fill: var(--obc-theme-text-tertiary); }
+[data-obc-theme] .pid-vessel-tag { font-family: 'Open Sans', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; fill: var(--obc-theme-text-tertiary); }
+[data-obc-theme] .pid-vessel-subtag { font-family: 'Open Sans', sans-serif; font-size: 10px; fill: var(--obc-theme-text-tertiary); opacity: 0.6; }
+[data-obc-theme] .pid-live-big { font-family: 'Open Sans', sans-serif; font-size: 22px; font-weight: 300; font-variant-numeric: tabular-nums; fill: var(--obc-theme-instr-value); }
+[data-obc-theme] .pid-live-unit { font-family: 'Open Sans', sans-serif; font-size: 10px; fill: var(--obc-theme-text-tertiary); }
+[data-obc-theme] .pid-live-sm  { font-family: 'Open Sans', sans-serif; font-size: 11px; font-variant-numeric: tabular-nums; fill: var(--obc-theme-instr-secondary); }
+[data-obc-theme] .pid-tag      { font-family: 'Open Sans', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.04em; fill: var(--obc-theme-text-tertiary); }
+[data-obc-theme] .pid-stream-label { font-family: 'Open Sans', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--obc-theme-text-tertiary); }
+[data-obc-theme] .pid-heater   { fill: none; stroke: var(--obc-theme-text-tertiary); stroke-width: 2; stroke-linecap: round; }
+[data-obc-theme] .pid-heater-state { font-family: 'Open Sans', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 0.06em; fill: var(--obc-theme-text-tertiary); }
+
+/* ISA instrument circles */
+[data-obc-theme] .pid-inst-circle { fill: var(--obc-theme-container-200); stroke: var(--obc-theme-text-secondary); }
+[data-obc-theme] .pid-inst-func   { font-family: 'Open Sans', sans-serif; font-size: 9px; font-weight: 700; fill: var(--obc-theme-text-primary); }
+[data-obc-theme] .pid-inst-num    { font-family: 'Open Sans', sans-serif; font-size: 9px; fill: var(--obc-theme-text-secondary); }
+
+/* Valve fills */
+[data-obc-theme] #fv101-l, [data-obc-theme] #fv101-r,
+[data-obc-theme] #fv201-l, [data-obc-theme] #fv201-r {
+  fill: var(--obc-valve-body); stroke: var(--obc-valve-outline);
+}
+[data-obc-theme] .pid-valve-stem  { stroke: var(--obc-valve-outline); fill: none; }
+[data-obc-theme] .pid-actuator-box { fill: var(--obc-theme-container-300); stroke: var(--obc-valve-outline); }
+[data-obc-theme] #he101-body      { fill: var(--obc-theme-container-200); stroke: var(--obc-valve-outline); }
+[data-obc-theme] #he101-contact   { stroke: var(--obc-valve-outline); }
+
+/* Alarm annotations */
+[data-obc-theme] .pid-alm-rect-alarm { stroke: var(--obc-status-alarm-text); stroke-width: 1; fill: var(--obc-status-alarm); }
+[data-obc-theme] .pid-alm-txt-alarm  { font-family: 'Open Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; fill: var(--obc-status-alarm-text); }
+[data-obc-theme] .pid-alm-rect-warn  { stroke: var(--obc-status-alarm-hi-text); stroke-width: 1; fill: var(--obc-status-alarm-hi); }
+[data-obc-theme] .pid-alm-txt-warn   { font-family: 'Open Sans', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 0.06em; fill: var(--obc-status-alarm-hi-text); }
+</style>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   OPENBRIDGE HMI — Main application script
+═══════════════════════════════════════════════════════════════════════════ */
+'use strict';
+
+/* ── Theme cycling ────────────────────────────────────────────────────────── */
+const THEMES = ['night','dusk','day','bright'];
+let themeIdx = 0;
+function cycleTheme() {
+  themeIdx = (themeIdx + 1) % THEMES.length;
+  const t = THEMES[themeIdx];
+  document.documentElement.setAttribute('data-obc-theme', t);
+  document.getElementById('theme-label').textContent = t.toUpperCase();
+  drawAllGauges(lastData);
+}
+
+/* ── Clock ────────────────────────────────────────────────────────────────── */
+function updateClock() {
+  const n = new Date();
+  document.getElementById('clock-time').textContent =
+    n.toLocaleTimeString('en-GB', {hour12:false});
+  document.getElementById('clock-date').textContent =
+    n.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}).toUpperCase();
+}
+setInterval(updateClock, 1000); updateClock();
+
+/* ── Trend data ───────────────────────────────────────────────────────────── */
+const TLEN = 120;
+const hist = { temp: Array(TLEN).fill(null), level: Array(TLEN).fill(null), press: Array(TLEN).fill(null) };
+
+/* ── CSS variable reader (for theme-aware canvas drawing) ───────────────── */
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
+/* ── Arc gauge renderer ───────────────────────────────────────────────────── */
+function drawArcGauge(svgId, value, min, max, hiPct, hhPct, almState) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const W = 72, H = 72, cx = 36, cy = 52, R = 28;
+  const startAngle = -210; // degrees, from 3 o'clock
+  const sweepAngle = 240;
+
+  function toRad(deg) { return deg * Math.PI / 180; }
+  function arcPath(a1Deg, a2Deg, r, inset) {
+    const ri = r - inset;
+    const x1 = cx + r  * Math.cos(toRad(a1Deg));
+    const y1 = cy + r  * Math.sin(toRad(a1Deg));
+    const x2 = cx + r  * Math.cos(toRad(a2Deg));
+    const y2 = cy + r  * Math.sin(toRad(a2Deg));
+    const x3 = cx + ri * Math.cos(toRad(a2Deg));
+    const y3 = cy + ri * Math.sin(toRad(a2Deg));
+    const x4 = cx + ri * Math.cos(toRad(a1Deg));
+    const y4 = cy + ri * Math.sin(toRad(a1Deg));
+    const large = (a2Deg - a1Deg) > 180 ? 1 : 0;
+    return `M${x1},${y1} A${r},${r} 0 ${large},1 ${x2},${y2} L${x3},${y3} A${ri},${ri} 0 ${large},0 ${x4},${y4} Z`;
+  }
+
+  const clamp = v => Math.max(0, Math.min(1, (v - min) / (max - min)));
+  const valFrac = clamp(value);
+  const hiFrac  = hiPct  / 100;
+  const hhFrac  = hhPct  / 100;
+  const loFrac  = 1 - hiFrac;
+  const llFrac  = 1 - hhFrac;
+
+  // angle helpers
+  const a = (frac) => startAngle + frac * sweepAngle;
+
+  // Theme colors
+  const arcBg      = cssVar('--obc-instr-arc-bg');
+  const arcNormal  = cssVar('--obc-instr-arc-normal');
+  const arcHi      = cssVar('--obc-instr-arc-hi');
+  const arcHH      = cssVar('--obc-instr-arc-hh');
+  const faceColor  = cssVar('--obc-instr-face');
+  const needleCol  = cssVar('--obc-instr-needle');
+  const textSec    = cssVar('--obc-theme-text-tertiary');
+  const alarmText  = cssVar('--obc-status-alarm-text');
+  const warnText   = cssVar('--obc-status-alarm-hi-text');
+
+  const nColor = almState === 'alarm' ? alarmText : almState === 'warn' ? warnText : needleCol;
+
+  svg.innerHTML = `
+    <circle cx="${cx}" cy="${cy}" r="${R+4}" fill="${faceColor}" stroke="none"/>
+    <path d="${arcPath(a(0), a(1), R+3, 7)}" fill="${arcBg}"/>
+    <path d="${arcPath(a(0), a(llFrac), R+3, 7)}" fill="${arcHH}"/>
+    <path d="${arcPath(a(llFrac), a(loFrac), R+3, 7)}" fill="${arcHi}"/>
+    <path d="${arcPath(a(loFrac), a(hiFrac), R+3, 7)}" fill="${arcNormal}"/>
+    <path d="${arcPath(a(hiFrac), a(hhFrac), R+3, 7)}" fill="${arcHi}"/>
+    <path d="${arcPath(a(hhFrac), a(1), R+3, 7)}" fill="${arcHH}"/>
+    ${(() => {
+      const na = a(valFrac);
+      const nx = cx + (R-4) * Math.cos(toRad(na));
+      const ny = cy + (R-4) * Math.sin(toRad(na));
+      return `<line x1="${cx}" y1="${cy}" x2="${nx}" y2="${ny}" stroke="${nColor}" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="${cx}" cy="${cy}" r="3" fill="${nColor}"/>`;
+    })()}
+    <text x="${cx-R+2}" y="${H-2}" font-family="Open Sans,sans-serif" font-size="8" fill="${textSec}" text-anchor="middle">${min}</text>
+    <text x="${cx+R-2}" y="${H-2}" font-family="Open Sans,sans-serif" font-size="8" fill="${textSec}" text-anchor="end">${max}</text>
+  `;
+}
+
+/* ── Level bargraph ───────────────────────────────────────────────────────── */
+function drawLevelGauge(svgId, value) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const W=28, H=72, bx=10, by=5, bw=8, bh=56;
+  const arcHH   = cssVar('--obc-instr-arc-hh');
+  const arcHi   = cssVar('--obc-instr-arc-hi');
+  const arcNorm = cssVar('--obc-instr-arc-normal');
+  const arcBg   = cssVar('--obc-instr-arc-bg');
+  const needle  = cssVar('--obc-instr-needle');
+  const textSec = cssVar('--obc-theme-text-tertiary');
+
+  const frac = Math.max(0, Math.min(1, value / 100));
+  const fillH = frac * bh;
+  const fillY = by + bh - fillH;
+
+  const fillCol = value < 10 ? arcHH : value < 20 ? arcHi : arcNorm;
+  const ptrY = by + bh * (1 - frac);
+
+  svg.innerHTML = `
+    <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="${arcBg}" rx="2"/>
+    <rect x="${bx}" y="${by+4}" width="${bw}" height="4" fill="${arcHH}" rx="1"/>
+    <rect x="${bx}" y="${by+8}" width="${bw}" height="4" fill="${arcHi}" rx="0"/>
+    <rect x="${bx}" y="${by+12}" width="${bw}" height="${bh-24}" fill="none" rx="0"/>
+    <rect x="${bx}" y="${by+bh-8}" width="${bw}" height="4" fill="${arcHi}" rx="0"/>
+    <rect x="${bx}" y="${by+bh-4}" width="${bw}" height="4" fill="${arcHH}" rx="1"/>
+    <rect x="${bx}" y="${fillY}" width="${bw}" height="${fillH}" fill="${fillCol}" rx="1" opacity="0.9"/>
+    <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" fill="none" stroke="${needle}" stroke-width="0.5" rx="2" opacity="0.3"/>
+    <line x1="${bx-4}" y1="${ptrY}" x2="${bx+bw+4}" y2="${ptrY}" stroke="${needle}" stroke-width="2"/>
+    <text x="${bx-2}" y="${by+5}" font-family="Open Sans" font-size="7" fill="${textSec}" text-anchor="end">100</text>
+    <text x="${bx-2}" y="${by+bh/2+3}" font-family="Open Sans" font-size="7" fill="${textSec}" text-anchor="end">50</text>
+    <text x="${bx-2}" y="${by+bh+3}" font-family="Open Sans" font-size="7" fill="${textSec}" text-anchor="end">0</text>
+  `;
+}
+
+/* ── Trend renderer ───────────────────────────────────────────────────────── */
+function drawTrend(canvasId, data, min, max, color) {
+  const canvas = document.getElementById(canvasId);
+  if (!canvas) return;
+  const W = canvas.clientWidth || canvas.width;
+  const H = canvas.clientHeight || canvas.height;
+  if (W === 0 || H === 0) return;
+  canvas.width  = W;
+  canvas.height = H;
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, W, H);
+
+  // Background
+  ctx.fillStyle = cssVar('--obc-trend-bg');
+  ctx.fillRect(0, 0, W, H);
+
+  // Grid
+  ctx.strokeStyle = cssVar('--obc-trend-grid');
+  ctx.lineWidth = 0.5;
+  for (let i = 0; i <= 4; i++) {
+    const y = Math.round(i/4 * H) + 0.5;
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+  for (let i = 0; i <= 6; i++) {
+    const x = Math.round(i/6 * W) + 0.5;
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+
+  // Range labels
+  ctx.fillStyle = cssVar('--obc-theme-text-tertiary');
+  ctx.font = `9px 'Open Sans',sans-serif`;
+  ctx.textAlign = 'left';
+  ctx.fillText(max, 3, 10);
+  ctx.fillText(min, 3, H - 3);
+
+  // Data line
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  let started = false;
+  data.forEach((v, i) => {
+    if (v === null) { started = false; return; }
+    const x = (i / (TLEN - 1)) * W;
+    const y = H - ((v - min) / (max - min)) * H;
+    if (!started) { ctx.moveTo(x, y); started = true; }
+    else ctx.lineTo(x, y);
+  });
+  ctx.stroke();
+}
+
+function drawAllTrends() {
+  drawTrend('trend-temp',  hist.temp,  0,   100, cssVar('--obc-trend-line-1'));
+  drawTrend('trend-level', hist.level, 0,   100, cssVar('--obc-trend-line-2'));
+  drawTrend('trend-press', hist.press, 1.0, 4.0, cssVar('--obc-trend-line-3'));
+}
+
+/* ── Gauge redraw on theme change ─────────────────────────────────────────── */
+let lastData = { Temperature:25, FillLevel:80, Pressure:1.1 };
+function drawAllGauges(d) {
+  const almOT = !!d.OverTemperature;
+  const almLL = !!d.LowLevel;
+  const almHP = !!d.HighPressure;
+  drawArcGauge('gauge-temp',  d.Temperature  || 0,  0, 100, 90, 95,  almOT ? 'alarm' : d.Temperature > 80 ? 'warn' : 'ok');
+  drawArcGauge('gauge-press', d.Pressure     || 0,  1, 4,   85, 90,  almHP ? 'alarm' : d.Pressure > 3.0 ? 'warn' : 'ok');
+  drawLevelGauge('gauge-level', d.FillLevel  || 0);
+  drawAllTrends();
+}
+
+/* ── Display updater ──────────────────────────────────────────────────────── */
+function updateDisplay(d) {
+  lastData = d;
+  const temp  = +(d.Temperature)   || 0;
+  const level = +(d.FillLevel)     || 0;
+  const press = +(d.Pressure)      || 0;
+  const fIn   = +(d.FlowRateIn)    || 0;
+  const fOut  = +(d.FlowRateOut)   || 0;
+  const hPow  = +(d.HeaterPower)   || 0;
+  const almOT = !!d.OverTemperature;
+  const almLL = !!d.LowLevel;
+  const almHP = !!d.HighPressure;
+
+  // Live readings
+  const fmt = (v, dp) => v.toFixed(dp);
+  document.getElementById('val-temp').textContent   = fmt(temp,  1);
+  document.getElementById('val-press').textContent  = fmt(press, 3);
+  document.getElementById('val-level').textContent  = fmt(level, 1);
+  document.getElementById('fp-hpow').textContent    = fmt(hPow,  2);
+  document.getElementById('fp-inlet-val').textContent  = fmt(parseFloat(document.getElementById('ctrl-inlet').value), 1) + ' %';
+  document.getElementById('fp-outlet-val').textContent = fmt(parseFloat(document.getElementById('ctrl-outlet').value), 1) + ' %';
+
+  // Trend values in label
+  document.getElementById('tv-temp').innerHTML  = fmt(temp,1) + '&thinsp;<span style="font-size:11px;opacity:0.6">°C</span>';
+  document.getElementById('tv-level').innerHTML = fmt(level,1)+ '&thinsp;<span style="font-size:11px;opacity:0.6">%</span>';
+  document.getElementById('tv-press').innerHTML = fmt(press,3)+ '&thinsp;<span style="font-size:11px;opacity:0.6">bar</span>';
+
+  // Trend history
+  hist.temp.push(temp);   hist.temp.shift();
+  hist.level.push(level); hist.level.shift();
+  hist.press.push(press); hist.press.shift();
+
+  // Gauges
+  drawAllGauges(d);
+
+  // P&ID water fill
+  const fillH = (level / 100) * 218;
+  const fillY = 299 - fillH; // bottom of vessel y=299
+  const wr = document.getElementById('vessel-water');
+  if (wr) {
+    const waterCol = temp > 60 ? '#e05030' : temp > 40 ? '#c07840' : '#4070c0';
+    wr.setAttribute('y', fillY);
+    wr.setAttribute('height', fillH);
+    wr.setAttribute('fill', waterCol);
+  }
+  const vcr = document.getElementById('vessel-clip-rect');
+  if (vcr) { vcr.setAttribute('y', fillY); vcr.setAttribute('height', fillH); }
+
+  // P&ID live values
+  const pl = document.getElementById('pid-level-val');
+  if (pl) pl.textContent = fmt(level, 1);
+  const pfi = document.getElementById('pid-flowin');
+  if (pfi) pfi.textContent = fmt(fIn, 2);
+  const pfo = document.getElementById('pid-flowout');
+  if (pfo) pfo.textContent = fmt(fOut, 2);
+
+  // Valve flow color on P&ID
+  const inletOpen = parseFloat(document.getElementById('ctrl-inlet').value) > 1;
+  const outletOpen= parseFloat(document.getElementById('ctrl-outlet').value) > 1;
+  const flowCol = cssVar('--obc-valve-flow');
+  const valveBody = cssVar('--obc-valve-body');
+  ['fv101-l','fv101-r'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('fill', inletOpen && fIn > 0.1 ? flowCol : valveBody);
+  });
+  ['fv201-l','fv201-r'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.setAttribute('fill', outletOpen && fOut > 0.1 ? flowCol : valveBody);
+  });
+
+  // Heater HE-101 state
+  const heaterOn = hPow > 0.1;
+  const ht = document.getElementById('pid-heater-label');
+  if (ht) {
+    ht.textContent = heaterOn ? 'HEATER ON' : 'HEATER OFF';
+    ht.setAttribute('fill', heaterOn ? cssVar('--obc-status-warning-text') : cssVar('--obc-theme-text-tertiary'));
+  }
+  const hcoil = document.getElementById('pid-heater-coil');
+  if (hcoil) hcoil.setAttribute('stroke', heaterOn ? cssVar('--obc-status-warning-text') : cssVar('--obc-theme-text-tertiary'));
+
+  // Alarm state
+  const alarms = [
+    { id:'ot', active: almOT, dotId:'alm-dot-ot', lblId:'alm-lbl-ot', pidId:'pid-alm-ot', bamId:'bam-ot', sepId:'bam-sep1' },
+    { id:'ll', active: almLL, dotId:'alm-dot-ll', lblId:'alm-lbl-ll', pidId:'pid-alm-ll', bamId:'bam-ll', sepId:'bam-sep2' },
+    { id:'hp', active: almHP, dotId:'alm-dot-hp', lblId:'alm-lbl-hp', pidId:'pid-alm-hp', bamId:'bam-hp', sepId:null },
+  ];
+  let anyAlarm = false;
+  alarms.forEach(a => {
+    const dot = document.getElementById(a.dotId);
+    const lbl = document.getElementById(a.lblId);
+    const pid = document.getElementById(a.pidId);
+    const bam = document.getElementById(a.bamId);
+    if (a.active) {
+      anyAlarm = true;
+      if (dot) { dot.className = 'alarm-dot alarm'; }
+      if (lbl) { lbl.className = 'alarm-tag-label obc-text-sm alarm'; }
+      if (pid) pid.style.display = '';
+      if (bam) bam.style.display = 'flex';
+      if (a.sepId) { const s = document.getElementById(a.sepId); if (s) s.style.display = ''; }
+    } else {
+      if (dot) dot.className = 'alarm-dot ok';
+      if (lbl) lbl.className = 'alarm-tag-label obc-text-sm';
+      if (pid) pid.style.display = 'none';
+      if (bam) bam.style.display = 'none';
+      if (a.sepId) { const s = document.getElementById(a.sepId); if (s) s.style.display = 'none'; }
+    }
+  });
+
+  document.getElementById('obc-bam').className = anyAlarm ? 'has-alarm' : '';
+  const badge = document.getElementById('bam-topbar-badge');
+  if (badge) badge.className = 'topbar-alarm-badge' + (anyAlarm ? ' active' : '');
+
+  // Value text colors on alarm
+  document.getElementById('val-temp').style.color  = almOT ? cssVar('--obc-status-alarm-text') : cssVar('--obc-theme-instr-value');
+  document.getElementById('val-level').style.color = almLL ? cssVar('--obc-status-alarm-text') : cssVar('--obc-theme-instr-value');
+  document.getElementById('val-press').style.color = almHP ? cssVar('--obc-status-alarm-hi-text') : cssVar('--obc-theme-instr-value');
+}
+
+/* ── Alarm acknowledge ────────────────────────────────────────────────────── */
+function ackAlarms() { /* visual ack — in production would write to PLC */ }
+
+/* ── Heater toggle ────────────────────────────────────────────────────────── */
+let heaterOn = false;
+function toggleHeater() {
+  heaterOn = !heaterOn;
+  const btn = document.getElementById('btn-heater');
+  btn.textContent = heaterOn ? 'ON' : 'OFF';
+  btn.className = 'obc-toggle' + (heaterOn ? ' on' : '');
+  writeNode('HeaterEnable', heaterOn);
+}
+
+/* ── Sim control ──────────────────────────────────────────────────────────── */
+function onSimInterval(v) {
+  const val = parseFloat(v)/10;
+  document.getElementById('fp-interval').textContent = val.toFixed(1) + ' s';
+  writeNode('SimIntervalS', val);
+}
+function onSimSpeed(v) {
+  const val = parseFloat(v)/10;
+  document.getElementById('fp-speed').textContent = val.toFixed(1) + '×';
+  writeNode('SimSpeed', val);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   OPC UA BRIDGE  (WebSocket → hmi_bridge.py)
+═══════════════════════════════════════════════════════════════════════════ */
+const WS_URL  = 'ws://localhost:8765';
+const POLL_MS = 1000;
+let ws = null, connected = false, demoMode = true;
+
+function connectWS() {
+  try {
+    ws = new WebSocket(WS_URL);
+    ws.onopen = () => {
+      connected = true; demoMode = false;
+      setConn(true);
+      pollServer();
+    };
+    ws.onmessage = evt => {
+      try { const m = JSON.parse(evt.data); if (m.type === 'data') updateDisplay(m.nodes); } catch(e){}
+    };
+    ws.onclose = ws.onerror = () => {
+      connected = false; demoMode = true; setConn(false);
+      setTimeout(connectWS, 5000);
+    };
+  } catch(e) { demoMode = true; setConn(false); setTimeout(connectWS, 5000); }
+}
+
+function pollServer() {
+  if (!connected) return;
+  ws.send(JSON.stringify({cmd:'read'}));
+  setTimeout(pollServer, POLL_MS);
+}
+
+function writeNode(node, value) {
+  if (connected) ws.send(JSON.stringify({cmd:'write', node, value}));
+}
+
+function setConn(ok) {
+  document.getElementById('conn-dot').className = 'conn-dot' + (ok ? ' live' : '');
+  document.getElementById('conn-label').textContent = ok ? 'LIVE' : 'DEMO';
+}
+
+/* ── Demo / JS physics fallback ─────────────────────────────────────────── */
+const demo = { fill:80, temp:25, inletV:0, outletV:0, heaterOn:false };
+function runDemo() {
+  if (!demoMode) return;
+  demo.inletV   = parseFloat(document.getElementById('ctrl-inlet').value);
+  demo.outletV  = parseFloat(document.getElementById('ctrl-outlet').value);
+  demo.heaterOn = heaterOn;
+  const speed   = parseFloat(document.getElementById('ctrl-speed').value) / 10;
+  const steps   = Math.max(1, Math.round(speed));
+  let d;
+  for (let i = 0; i < steps; i++) {
+    const dt = 1;
+    const inFlow  = demo.inletV  / 100 * 20;
+    const vol     = demo.fill / 100 * 200;
+    const maxOut  = vol / (dt / 60);
+    const outFlow = Math.min(demo.outletV / 100 * 15, maxOut);
+    const newVol  = Math.max(0, Math.min(200, vol + (inFlow - outFlow) * dt / 60));
+    if (newVol > 0 && inFlow > 0) {
+      demo.temp = (vol * demo.temp + inFlow * dt/60 * 20 - outFlow * dt/60 * demo.temp) / newVol;
+    }
+    demo.fill = newVol / 200 * 100;
+    const heatKw = (demo.heaterOn && demo.fill > 5) ? 6 * Math.min(1, Math.max(0, 100 - demo.temp) / 80) : 0;
+    const mass = newVol;
+    if (mass > 0) demo.temp = Math.max(20, Math.min(100, demo.temp + (heatKw - 0.3) * dt / (mass * 4.186)));
+    const press = 1.013 + (demo.fill / 100) * 0.5 + Math.max(0, demo.temp - 20) * 0.02;
+    d = {
+      FillLevel: demo.fill, Temperature: demo.temp, Pressure: press,
+      FlowRateIn: inFlow, FlowRateOut: outFlow, HeaterPower: heatKw,
+      OverTemperature: demo.temp > 95, LowLevel: demo.fill < 10, HighPressure: press > 3.5
+    };
+  }
+  if (d) updateDisplay(d);
+}
+
+/* ── Resize handler ──────────────────────────────────────────────────────── */
+let resizeTimer;
+window.addEventListener('resize', () => {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(() => { drawAllGauges(lastData); }, 100);
+});
+
+/* ── Boot ────────────────────────────────────────────────────────────────── */
+connectWS();
+setInterval(runDemo, POLL_MS);
+drawAllGauges(lastData);
+</script>
+</body>
+</html>

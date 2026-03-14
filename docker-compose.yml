@@ -1,0 +1,40 @@
+services:
+  boiler-hmi:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: boiler-hmi:latest
+    container_name: boiler-hmi
+    restart: unless-stopped
+    ports:
+      - "8080:8080"     # Static file server — open http://<host-ip>:8080/hmi.html
+      - "8765:8765"     # WebSocket bridge — browser connects here automatically
+    environment:
+      - PYTHONUNBUFFERED=1
+      # Override these to point at a remote simulator if needed
+      - OPCUA_URL=opc.tcp://boiler-simulator:4840/boiler/
+      - WS_HOST=0.0.0.0
+      - WS_PORT=8765
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import socket; s=socket.create_connection(('localhost', 8765), timeout=5); s.close()\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+
+# ── Connect to the simulator over an external Docker network ─────────────────
+# If running both projects on the same host:
+#   docker network create boiler-net
+#   Add --network boiler-net to both docker compose up commands, or use the
+#   network block below and run:
+#   docker compose --project-name boiler-hmi up -d
+#
+networks:
+  default:
+    external: true
+    name: boiler-net
