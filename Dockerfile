@@ -26,7 +26,11 @@ COPY --from=builder /install /usr/local
 
 # Bridge script and static HMI file
 COPY hmi_bridge.py .
-COPY hmi.html      .
+COPY index.html .
+COPY css .
+COPY js .
+COPY lib .
+
 
 # WebSocket port for browser connections
 EXPOSE 8765
@@ -36,5 +40,5 @@ EXPOSE 8080
 
 USER hmi
 
-# Start both the bridge and a static file server for hmi.html
+# Start both the bridge and a static file server
 CMD ["sh", "-c", "python -u hmi_bridge.py & python -m http.server 8080"]
